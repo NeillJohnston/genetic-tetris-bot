@@ -6,10 +6,11 @@ pub trait Individual {
 
 	/// Cross two parents to create two children. Order of the parents should
 	/// not be important.
-	fn crossover<T: Individual>(p1: &T, p2: &T) -> (T, T);
+	fn crossover(p1: &Self, p2: &Self) -> (Self, Self)
+		where Self: Sized;
 
 	/// Slightly mutate the genes of this individual.
-	fn mutate<T: Individual>(self) -> T;
+	fn mutate(self) -> Self;
 }
 
 fn f64_cmp(x: f64, y: f64) -> std::cmp::Ordering {
@@ -37,7 +38,7 @@ pub fn basic_generation_iter<T: Individual>(population: Vec<T>) -> Vec<T> {
 	let mut fitnesses: Vec<(f64, T)> = population.into_iter()
 		.map(|x| (x.fitness(), x))
 		.collect();
-	fitnesses.sort_by(|(f1, _), (f2, _)| f64_cmp(*f1, *f2));
+	fitnesses.sort_by(|(f1, _), (f2, _)| f64_cmp(*f1, *f2).reverse());
 	fitnesses.truncate(m);
 
 	let survivors: Vec<T> = fitnesses.into_iter()
@@ -72,4 +73,11 @@ pub fn evolve<T: Individual>(population: Vec<T>, generation_iter: fn(Vec<T>) -> 
 	}
 
 	population
+}
+
+pub fn best<T: Individual>(population: Vec<T>) -> (T, f64) {
+	population.into_iter()
+		.map(|x| { let f = x.fitness(); (x, f) })
+		.max_by(|(_, f1), (_, f2)| f64_cmp(*f1, *f2))
+		.unwrap()
 }
