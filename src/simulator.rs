@@ -5,7 +5,7 @@ use rand::random;
 pub trait Bot {
 	/// Take a state and outputs a score based on how desirable that state is
 	/// (higher = better).
-	pub fn evaluate(&self, state: State) -> f64;
+	fn evaluate(&self, state: State) -> f64;
 }
 
 fn random_mino() -> MinoShape {
