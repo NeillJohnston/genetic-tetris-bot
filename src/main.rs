@@ -7,12 +7,14 @@ use genetic::*;
 
 use rand::random;
 
-/// A very simple bot that takes three heuristics into account:
+/// A very simple bot that takes four heuristics into account:
 /// 	1. Score
 /// 	2. Max board height
 /// 	3. Holiness (amount of empty space below a block)
+/// 	4. Board flatness
+#[derive(Debug)]
 struct Simple {
-	weights: [f64; 3]
+	weights: [f64; 4]
 }
 
 impl Simple {
@@ -23,6 +25,7 @@ impl Simple {
 
 		Simple {
 			weights: [
+				gene(),
 				gene(),
 				gene(),
 				gene()
@@ -54,7 +57,8 @@ impl Simple {
 			weights: [
 				weight(0),
 				weight(1),
-				weight(2)
+				weight(2),
+				weight(3)
 			]
 		}
 	}
@@ -71,9 +75,12 @@ impl Bot for Simple {
 		let holiness = (0..10)
 			.map(|x| Simple::column_holiness(state.column(x)))
 			.fold(0, |a, h| a + h) as f64;
-
-		let values = [score, max_height, holiness];
 		
+		let flatness = (0..9)
+			.map(|x| (state.column_depth(x) as i32 - state.column_depth(x+1) as i32).abs())
+			.fold(0, |a, h| a + h) as f64;
+
+		let values = [score, max_height, holiness, flatness];
 		values.iter().zip(self.weights.iter())
 			.fold(0.0, |a, (v, w)| a + (v*w))
 	}
@@ -81,9 +88,9 @@ impl Bot for Simple {
 
 impl Individual for Simple {
 	fn fitness(&self) -> f64 {
-		// Simulate 10 games to get a somewhat-accurate idea of how well this
-		// bot performs
-		simulate(10, self)
+		// Simulate a few games to get a somewhat-accurate idea of how well
+		// this bot performs
+		simulate(5, self)
 	}
 
 	// Assign genes (weights) according to opposite non-zero bitmasks
