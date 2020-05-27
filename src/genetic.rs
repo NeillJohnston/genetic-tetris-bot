@@ -1,3 +1,8 @@
+#[path = "util.rs"]
+mod util;
+
+use util::f64_cmp;
+
 /// Genetically evolvable individuals.
 pub trait Individual {
 	/// Evaluate the fitness of this individual - give it a score, where
@@ -11,18 +16,6 @@ pub trait Individual {
 
 	/// Slightly mutate the genes of this individual.
 	fn mutate(self) -> Self;
-}
-
-fn f64_cmp(x: f64, y: f64) -> std::cmp::Ordering {
-	if x < y {
-		std::cmp::Ordering::Less
-	}
-	else if x > y {
-		std::cmp::Ordering::Greater
-	}
-	else {
-		std::cmp::Ordering::Equal
-	}
 }
 
 /// A simple default evolution step.

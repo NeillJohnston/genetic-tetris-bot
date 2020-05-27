@@ -1,11 +1,15 @@
+#[path = "util.rs"]
+mod util;
+
 use tetris::*;
 use rand::random;
+use util::f64_cmp;
 
 /// A simulatable Tetris bot.
 pub trait Bot {
 	/// Take a state and outputs a score based on how desirable that state is
 	/// (higher = better).
-	fn evaluate(&self, state: State) -> f64;
+	fn evaluate(&self, state: &State) -> f64;
 }
 
 fn random_mino() -> MinoShape {
@@ -24,21 +28,15 @@ fn random_mino() -> MinoShape {
 
 // Run a single turn in the game. Finds and feeds possible future states to
 // the bot, and returns the one that evaluates highest.
-fn turn<T: Bot>(state: State, next: MinoShape, bot: &T) -> Option<State> {
+fn turn<T: Bot>(state: &State, next: MinoShape, bot: &T) -> Option<State> {
     let mino = Mino::new(next);
 
     let possibilities = (0..next.n_rotations())
         .map(|n| state.all_drops(mino.rotated(n)))
         .flatten();
 
-    // Have to do this because `f64` does not have `cmp`
     possibilities.max_by(|a: &State, b: &State| {
-        if bot.evaluate(*a) < bot.evaluate(*b) {
-            std::cmp::Ordering::Less
-        }
-        else {
-            std::cmp::Ordering::Greater
-        }
+        f64_cmp(bot.evaluate(a), bot.evaluate(b))
     })
 }
 
@@ -52,7 +50,7 @@ pub fn simulate<T: Bot>(n: u32, bot: &T) -> f64 {
         // MARK: Not in line with real NES Tetris
         while state.lines < 300 {
             let next = random_mino();
-            state = match turn(state, next, bot) {
+            state = match turn(&state, next, bot) {
                 Some(state) => state,
                 None => { break; }
             };

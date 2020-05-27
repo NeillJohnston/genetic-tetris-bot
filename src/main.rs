@@ -65,7 +65,7 @@ impl Simple {
 }
 
 impl Bot for Simple {
-	fn evaluate(&self, state: State) -> f64 {
+	fn evaluate(&self, state: &State) -> f64 {
 		let score = state.score as f64;
 
 		let max_height = (0..10)
@@ -117,7 +117,7 @@ impl Individual for Simple {
 
 fn main() {
 	// Generate a random initial population
-	let n = 100;
+	let n = 25;
 	let population: Vec<Simple> = (0..n)
 		.map(|_| Simple::new())
 		.collect();
