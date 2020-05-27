@@ -48,8 +48,9 @@ pub fn simulate<T: Bot>(n: u32, bot: &T) -> f64 {
 
     for _ in 0..n {
 		let mut state = State::new();
-		// Simulated kill-screen at 500 lines
-        while state.lines < 500 {
+        // Simulated kill-screen at 300 lines
+        // MARK: Not in line with real NES Tetris
+        while state.lines < 300 {
             let next = random_mino();
             state = match turn(state, next, bot) {
                 Some(state) => state,
