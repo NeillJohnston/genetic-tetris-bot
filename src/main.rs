@@ -127,7 +127,7 @@ fn main() {
 	let population = evolve(population, basic_generation_iter, k);
 
 	// Find the best individual
-	let (champion, fitness) = best(population);
+	let (fitness, champion) = best(population);
 	
 	println!("{:?} -> {}", champion.weights, fitness);
 }
