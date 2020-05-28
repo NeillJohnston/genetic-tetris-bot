@@ -296,14 +296,14 @@ impl State {
 
 	/// Get all the ways that `mino` can be dropped without rotation (only
 	/// translation) in no particular order.
-	pub fn all_drops(&self, mino: Mino) -> Vec<State> {
+	pub fn all_drops(&self, mino: Mino) -> Vec<(State, Mino)> {
 		let mut res = Vec::new();
 
 		// 0, -1, ...
 		for dx in 0.. {
 			let mino = mino.translated(-dx, 0);
 			match self.drop(mino) {
-				Some(state) => { res.push(state); }
+				Some(state) => { res.push((state, mino)); }
 				None => { break; }
 			}
 		}
@@ -312,7 +312,7 @@ impl State {
 		for dx in 1.. {
 			let mino = mino.translated(dx, 0);
 			match self.drop(mino) {
-				Some(state) => { res.push(state); }
+				Some(state) => { res.push((state, mino)); }
 				None => { break; }
 			}
 		}

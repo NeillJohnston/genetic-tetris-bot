@@ -26,16 +26,17 @@ fn random_mino() -> MinoShape {
     }
 }
 
-// Run a single turn in the game. Finds and feeds possible future states to
-// the bot, and returns the one that evaluates highest.
-fn turn<T: Bot>(state: &State, next: MinoShape, bot: &T) -> Option<State> {
+/// Run a single turn in the game. Finds and feeds possible future states to
+/// the bot, and returns the one that evaluates highest + the mino placed that
+/// got it there.
+fn turn<T: Bot>(state: &State, next: MinoShape, bot: &T) -> Option<(State, Mino)> {
     let mino = Mino::new(next);
 
     let possibilities = (0..next.n_rotations())
         .map(|n| state.all_drops(mino.rotated(n)))
         .flatten();
 
-    possibilities.max_by(|a: &State, b: &State| {
+    possibilities.max_by(|(a, _): &(State, Mino), (b, _): &(State, Mino)| {
         f64_cmp(bot.evaluate(a), bot.evaluate(b))
     })
 }
@@ -51,7 +52,7 @@ pub fn simulate<T: Bot>(n: u32, bot: &T) -> f64 {
         while state.lines < 300 {
             let next = random_mino();
             state = match turn(&state, next, bot) {
-                Some(state) => state,
+                Some((state, _)) => state,
                 None => { break; }
             };
         }
