@@ -22,19 +22,30 @@ pub trait Individual: std::marker::Send + 'static {
 	fn mutate(self) -> Self;
 }
 
-/// Transform a population (vector of `Individuals` into a vector that pairs)
-/// individuals with their fitness.
+/// Statistical summary of a population.
+#[derive(Debug)]
+pub struct Summary {
+	// 5-number summary of fitnesses
+	fitness_distribution: [f64; 5]
+}
+
+/// Transform a population (vector of `Individuals`) into a sorted list that
+/// pairs individuals with their fitness.
 /// 
-/// Runs multithreaded in order to speed up computation (because we assume)
-/// that evaluating an individual's fitness is a costly operation).
-fn all_fitnesses<T: Individual>(population: Vec<T>) -> Vec<(f64, T)> {
+/// Runs multithreaded in order to speed up computation, because evaluating an
+/// individual's fitness is a costly operation.
+fn population_fitness<T: Individual>(population: Vec<T>) -> Vec<(f64, T)> {
 	let handles: Vec<JoinHandle<(f64, T)>> = population.into_iter()
 		.map(|individual| spawn(|| (individual.fitness(), individual)))
 		.collect();
 	
-	handles.into_iter()
+	let mut fitnesses: Vec<(f64, T)> = handles.into_iter()
 		.map(|handle| handle.join().unwrap())
-		.collect()
+		.collect();
+		
+	fitnesses.sort_by(|(f1, _), (f2, _)| f64_cmp(*f1, *f2).reverse());
+
+	fitnesses
 }
 
 /// A simple default evolution step.
@@ -43,12 +54,28 @@ fn all_fitnesses<T: Individual>(population: Vec<T>) -> Vec<(f64, T)> {
 /// pair of surviving individuals to make children and then mutates the
 /// parents and adds them back to the population. If the original population
 /// size is `n`, then the number of survivors chosen is sqrt(`n`).
-pub fn basic_generation_iter<T: Individual>(population: Vec<T>) -> Vec<T> {
-	let m = (population.len() as f64).sqrt().round() as usize;
+/// 
+/// While this method has some obvious drawbacks (max fitness can decrease due
+/// to mutations, and often will) it's a starting point.
+/// 
+/// Returns the next population as well as a summary of the initial population.
+pub fn basic_generation_iter<T: Individual>(population: Vec<T>) -> (Vec<T>, Summary) {
+	let n = population.len();
+	let m = (n as f64).sqrt().round() as usize;
 
 	// Sort the population by fitness and retain the top `m`
-	let mut fitnesses = all_fitnesses(population);
-	fitnesses.sort_by(|(f1, _), (f2, _)| f64_cmp(*f1, *f2).reverse());
+	let mut fitnesses = population_fitness(population);
+
+	let summary = Summary {
+		fitness_distribution: [
+			fitnesses[n-1].0,
+			fitnesses[3*n/4].0,
+			fitnesses[n/2].0,
+			fitnesses[n/4].0,
+			fitnesses[0].0
+		]
+	};
+
 	fitnesses.truncate(m);
 
 	let survivors: Vec<T> = fitnesses.into_iter()
@@ -72,25 +99,5 @@ pub fn basic_generation_iter<T: Individual>(population: Vec<T>) -> Vec<T> {
 	population.append(&mut crossed_over);
 	population.append(&mut mutated);
 
-	population
-}
-
-/// Evolve a population for `n_generations` generations with a specified
-/// generation iterator function.
-pub fn evolve<T: Individual>(population: Vec<T>, generation_iter: fn(Vec<T>) -> Vec<T>, n_generations: u32) -> Vec<T> {
-	let mut population = population;
-
-	for _ in 0..n_generations {
-		population = generation_iter(population);
-	}
-
-	population
-}
-
-/// Reduce a population to its best individual.
-/// TODO: Re-runs fitness evaluation so this definitely needs to be replaced.
-pub fn best<T: Individual>(population: Vec<T>) -> (f64, T) {
-	all_fitnesses(population).into_iter()
-		.max_by(|(f1, _), (f2, _)| f64_cmp(*f1, *f2))
-		.unwrap()
+	(population, summary)
 }

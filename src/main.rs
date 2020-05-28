@@ -118,16 +118,17 @@ impl Individual for Simple {
 fn main() {
 	// Generate a random initial population
 	let n = 25;
-	let population: Vec<Simple> = (0..n)
+	let mut population: Vec<Simple> = (0..n)
 		.map(|_| Simple::new())
 		.collect();
 	
 	// Evolve a bit
 	let k = 10;
-	let population = evolve(population, basic_generation_iter, k);
+	for i in 0..k {
+		let (population_, summary) = basic_generation_iter(population);
 
-	// Find the best individual
-	let (fitness, champion) = best(population);
-	
-	println!("{:?} -> {}", champion.weights, fitness);
+		println!("Gen {}: {:?}", i, summary);
+
+		population = population_;
+	}
 }
