@@ -96,8 +96,8 @@ impl Individual for Simple {
 	// Assign genes (weights) according to opposite non-zero bitmasks
 	fn crossover(p1: &Simple, p2: &Simple) -> (Simple, Simple) {
 		let mut mask = 0;
-		while mask != 0b000 && mask != 0b111 {
-			mask = random::<u64>() % 8;
+		while mask != 0b0000 && mask != 0b1111 {
+			mask = random::<u64>() % (1<<4);
 		}
 
 		(Simple::from_mask(p1, p2, mask), Simple::from_mask(p2, p1, mask))
