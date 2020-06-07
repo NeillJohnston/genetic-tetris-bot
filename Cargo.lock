@@ -26,6 +26,9 @@ dependencies = [
 [[package]]
 name = "interface"
 version = "0.1.0"
+dependencies = [
+ "tetris 0.1.0",
+]
 
 [[package]]
 name = "libc"

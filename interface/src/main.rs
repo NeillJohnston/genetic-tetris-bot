@@ -1,5 +1,8 @@
+mod protocol;
+
 use std::net::{TcpListener, TcpStream};
 use std::io::prelude::*;
+use protocol::*;
 
 fn main() {
 	let listener = TcpListener::bind("127.0.0.1:10000").unwrap();
@@ -16,10 +19,15 @@ fn handle(mut stream: TcpStream) {
 	println!("received a connection");
 
 	loop {
-		let mut buffer = [0; 1024];
+		let mut buffer = Vec::new();
 		stream.read(&mut buffer).unwrap();
 
-		let message = String::from_utf8_lossy(&buffer[..]);
-		println!("{}", message);
+		let request = String::from_utf8(buffer).unwrap();
+
+		let (state, mino) = parse_request(&request);
+
+		// ...
+
+		let response = make_response(Vec::new());
 	}
 }
