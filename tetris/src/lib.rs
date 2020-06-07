@@ -1,5 +1,6 @@
-use std::collections::HashSet;
 use std::cmp::max;
+use std::collections::HashSet;
+use std::collections::VecDeque;
 
 /// The shape a tetromino can have.
 #[derive(Clone, Copy, Debug)]
@@ -294,30 +295,47 @@ impl State {
 		20
 	}
 
-	/// Get all the ways that `mino` can be dropped without rotation (only
-	/// translation) in no particular order.
-	pub fn all_drops(&self, mino: Mino) -> Vec<(State, Mino)> {
-		let mut res = Vec::new();
+	/// Get all possible future board states and the minos that cause them.
+	pub fn possibilities(&self, next: MinoShape) -> Vec<(State, Mino)> {
+		// Algorithm is a simple BFS, moving minos one unit/rotation at a time
 
-		// 0, -1, ...
-		for dx in 0.. {
-			let mino = mino.translated(-dx, 0);
-			match self.drop(mino) {
-				Some(state) => { res.push((state, mino)); }
-				None => { break; }
+		// Visited state for minos - visited[x][y][rot]
+		let mut visited = [[[false; 4]; 20]; 10];
+
+		let mut queue = VecDeque::new();
+		queue.push_back(Mino::new(next));
+
+		let mut minos = Vec::new();
+
+		while !queue.is_empty() {
+			let Mino { x, y, rot, .. } = queue.pop_front().unwrap();
+			let mino = Mino { x, y, rot, shape: next };
+
+			if !self.board.can_place(mino) {
+				continue;
+			}
+
+			let (xi, yi, roti) = (x as usize, y as usize, rot as usize);
+			if visited[xi][yi][roti] {
+				continue;
+			}
+			visited[xi][yi][roti] = true;
+
+			queue.push_back(mino.translated(0, 1));
+			queue.push_back(mino.translated(-1, 0));
+			queue.push_back(mino.translated(1, 0));
+			queue.push_back(mino.rotated(-1));
+			queue.push_back(mino.rotated(1));
+
+			let down = mino.translated(0, 1);
+			if !self.board.can_place(down) {
+				minos.push(mino);
 			}
 		}
 
-		// +1, +2, ...
-		for dx in 1.. {
-			let mino = mino.translated(dx, 0);
-			match self.drop(mino) {
-				Some(state) => { res.push((state, mino)); }
-				None => { break; }
-			}
-		}
-
-		res
+		minos.into_iter()
+			.map(|mino| (self.place(mino).unwrap(), mino))
+			.collect()
 	}
 }
 
@@ -326,15 +344,18 @@ mod state_tests {
 	use crate::*;
 
 	#[test]
-	fn all_drops() {
+	fn possibilities() {
 		let state = State::new();
-		let mino = Mino::new(MinoShape::J);
-		let drops = state.all_drops(mino);
-		assert_eq!(drops.len(), 8);
-		
+		let next = MinoShape::J;
+		let possibilities = state.possibilities(next);
+		assert_eq!(possibilities.len(), 34);
+
 		let state = State::new();
-		let mino = Mino::new(MinoShape::I).rotated(1);
-		let drops = state.all_drops(mino);
-		assert_eq!(drops.len(), 10);
+		let mino = Mino::new(MinoShape::S).translated(0, 18);
+		let state = state.place(mino).unwrap();
+		let next = MinoShape::J;
+		let possibilities = state.possibilities(next);
+		// 35 possibilities now that there's a tuck
+		assert_eq!(possibilities.len(), 35);
 	}
 }
